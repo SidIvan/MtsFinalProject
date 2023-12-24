@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  driver.build:
+    image: build:develop
+    build:
+      context: "."
+      dockerfile: "deployment/build.Dockerfile"
+
+  driver:
+    build:
+      context: "."
+      dockerfile: "deployment/run.Dockerfile"
+    restart: unless-stopped
+    depends_on:
+      driver.build:
+        condition: service_completed_successfully
+      mongodb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    env_file:
+      -  "deployment/dev.env"
+
+    volumes:
+      - './cmd/DriverService/config.yaml:/driver/config.yaml'
+#      - './migrations/auth/:/app/migrations/auth'
+    ports:
+      - '80:8080'
+      - '9001:9001'
+
+
+  mongodb:
+    image: mongo
+    restart: always
+    ports:
+      - '27017:27017'
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    healthcheck:
+      test: nc -z localhost 2181 || exit -1
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_PEER_PORT: 2888
+      ZOOKEEPER_LEADER_PORT: 3888
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - '22181:2181'
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - 29092:29092
+    healthcheck:
+      test: nc -z localhost 9092 || exit -1
+    environment:
+      KAFKA_BROKER_RACK: Docker
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181/kafka
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_JMX_PORT: 39999
+    volumes:
+      - ./data/kafka:/var/lib/kafka/data
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command:
+      - --kafka.server=kafka:9092
+    ports:
+      - 9308:9308
+
+  kafdrop:
+     image: obsidiandynamics/kafdrop
+     depends_on:
+       kafka:
+         condition: service_healthy
+     environment:
+       KAFKA_BROKERCONNECT: kafka:9092
+       CMD_ARGS: --schemaregistry.connect=http://schema-registry:8081
+     ports:
+       - 9000:9000
+
+  prometheus:
+    image: prom/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+    volumes:
+      - ./deployment/prometheus:/etc/prometheus
+      - ./prometheus_data:/prometheus
+
+  jaeger-all-in-one:
+      image: jaegertracing/all-in-one:latest
+      restart: always
+      ports:
+        - "16686:16686"
+        - "14268"
+        - "14250"
+
+  otel-collector:
+      image: otel/opentelemetry-collector:0.88.0
+      restart: always
+      command: [ "--config=/etc/otel-collector.yaml" ]
+      volumes:
+        - ./deployment/otel/otel-collector.yaml:/etc/otel-collector.yaml
+      ports:
+        - "1888:1888"
+        - "8888:8888"
+        - "8889:8889"
+        - "13133:13133"
+        - "4317:4317"
+        - "55679:55679"
+        - "16685:16685"
+      depends_on:
+        - jaeger-all-in-one
+
+  nats:
+    image: nats
+    ports:
+      - "4222:4222"

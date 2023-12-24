@@ -1,0 +1,48 @@
+env:
+    "dev"
+port:
+    8080
+source:
+    "/driverService"
+timeout.sec:
+    10
+
+location.service.config:
+    host:
+        "127.0.0.1"
+    port:
+        8081
+    timeout.sec:
+        10
+
+kafka.config:
+    host:
+        "kafka"
+    port:
+        9092
+    read.topic:
+        "read_topic"
+    write.topic:
+        "write_topic"
+    group.id:
+        "group"
+    session.timeout.sec:
+        10
+    is.async.write:
+        false
+    write.batch.size:
+        1
+    timeout.sec:
+        10
+
+mongo.config:
+    timeout.sec:
+        10
+    uri:
+        "mongodb://mongodb:27017"
+    database.name:
+        "database"
+    trip.collection.name:
+        "trips"
+    cancel.reason.log.collection.name:
+        "cancel_logs"
