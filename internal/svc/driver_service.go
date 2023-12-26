@@ -9,6 +9,7 @@ import (
 	"fmt"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"go.opentelemetry.io/otel"
+	"sync"
 	"time"
 )
 
@@ -99,7 +100,13 @@ func (s DriverServiceImpl) CancelTrip(ctx context.Context, userId string, tripId
 			logger.Main.Error(fmt.Sprintf("Correct cancel trip operation failed"))
 			return InternalError
 		}
-		go s.driverRepo.SaveCancelReason(ctx, tripId, userId, reason)
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			s.driverRepo.SaveCancelReason(ctx, tripId, userId, reason)
+			wg.Done()
+		}()
+		wg.Wait()
 		return Ok
 	}
 	logger.Main.Warn(fmt.Sprintf("Invalid attempt to change trip status from %s to %s", trip.Status, model.CANCELED))

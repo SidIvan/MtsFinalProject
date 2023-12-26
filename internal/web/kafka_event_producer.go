@@ -59,6 +59,7 @@ func (p *KafkaEventProducer) SendTripEvent(baseCtx context.Context, msg *svc.Tri
 	})
 	if err != nil {
 		logger.Main.Error(err.Error())
+		return
 	}
 	logger.Main.Info(fmt.Sprintf("Trip event message with id: %s successfully sended\n%s", msg.Id, msg.ToString()))
 }
