@@ -52,8 +52,8 @@ func NewMongoConfigFromEnv() *MongoConfig {
 		TimeoutSec:                    timeout,
 		URI:                           os.Getenv("MONGO_CONFIG_URI"),
 		DatabaseName:                  os.Getenv("MONGO_CONFIG_DATABASE_NAME"),
-		TripCollectionName:            os.Getenv("MONGO_CONFIG_DATABASE_NAME"),
-		CancelReasonLogCollectionName: os.Getenv("MONGO_CONFIG_DATABASE_NAME"),
+		TripCollectionName:            os.Getenv("MONGO_CONFIG_TRIP_COLLECTION_NAME"),
+		CancelReasonLogCollectionName: os.Getenv("MONGO_CONFIG_CANCEL_REASON_LOG_COLLECTION_NAME"),
 	}
 }
 

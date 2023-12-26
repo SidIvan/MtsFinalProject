@@ -74,7 +74,7 @@ func (s DriverServiceImpl) GetTrips(ctx context.Context, userId string) []model.
 func (s DriverServiceImpl) GetTrip(ctx context.Context, userId string, tripId string) *model.Trip {
 	ctx, span := Tracer.Start(ctx, "/get-trip-svc-method")
 	defer span.End()
-	return s.driverRepo.GetTrip(ctx, userId, tripId)
+	return s.driverRepo.GetTrip(ctx, tripId, userId)
 }
 
 type ChangeTripStatusStatus byte
@@ -89,13 +89,13 @@ const (
 func (s DriverServiceImpl) CancelTrip(ctx context.Context, userId string, tripId string, reason string) ChangeTripStatusStatus {
 	ctx, span := Tracer.Start(ctx, "/cancel-trip-svc-method")
 	defer span.End()
-	trip := s.driverRepo.GetTrip(ctx, userId, tripId)
+	trip := s.driverRepo.GetTrip(ctx, tripId, userId)
 	if trip == nil {
 		logger.Main.Warn(fmt.Sprintf("Trip with id: %s not found for driver with id: %s", tripId, userId))
 		return TripNotFound
 	}
 	if model.IsValidChangeStatus(trip.Status, model.CANCELED) {
-		if !s.driverRepo.PutTripStatus(ctx, userId, tripId, model.CANCELED) {
+		if !s.driverRepo.PutTripStatus(ctx, tripId, userId, model.CANCELED) {
 			logger.Main.Error(fmt.Sprintf("Correct cancel trip operation failed"))
 			return InternalError
 		}
@@ -109,7 +109,7 @@ func (s DriverServiceImpl) CancelTrip(ctx context.Context, userId string, tripId
 func (s DriverServiceImpl) AcceptTrip(ctx context.Context, userId string, tripId string) ChangeTripStatusStatus {
 	ctx, span := Tracer.Start(ctx, "/accept-trip-svc-method")
 	defer span.End()
-	trip := s.driverRepo.GetTrip(ctx, userId, tripId)
+	trip := s.driverRepo.GetTrip(ctx, tripId, userId)
 	if trip == nil {
 		logger.Main.Warn(fmt.Sprintf("Trip with id: %s not found for driver with id: %s", tripId, userId))
 		return TripNotFound
@@ -118,7 +118,7 @@ func (s DriverServiceImpl) AcceptTrip(ctx context.Context, userId string, tripId
 		logger.Main.Warn(fmt.Sprintf("Invalid attempt to change trip status from %s to %s", trip.Status, model.DRIVER_FOUND))
 		return InvalidNewStatus
 	}
-	if s.driverRepo.PutTripStatus(ctx, userId, tripId, model.DRIVER_FOUND) {
+	if s.driverRepo.PutTripStatus(ctx, tripId, userId, model.DRIVER_FOUND) {
 		go s.sendAcceptedTripMessage(context.Background(), NewTripMessagePayload(s.genMsgId(), s.source, tripId))
 		return Ok
 	}
@@ -129,7 +129,7 @@ func (s DriverServiceImpl) AcceptTrip(ctx context.Context, userId string, tripId
 func (s DriverServiceImpl) StartTrip(ctx context.Context, userId string, tripId string) ChangeTripStatusStatus {
 	ctx, span := Tracer.Start(ctx, "/start-trip-svc-method")
 	defer span.End()
-	trip := s.driverRepo.GetTrip(ctx, userId, tripId)
+	trip := s.driverRepo.GetTrip(ctx, tripId, userId)
 	if trip == nil {
 		return TripNotFound
 	}
@@ -137,7 +137,7 @@ func (s DriverServiceImpl) StartTrip(ctx context.Context, userId string, tripId 
 		logger.Main.Warn(fmt.Sprintf("Invalid attempt to change trip status from %s to %s", trip.Status, model.STARTED))
 		return InvalidNewStatus
 	}
-	if s.driverRepo.PutTripStatus(ctx, userId, tripId, model.STARTED) {
+	if s.driverRepo.PutTripStatus(ctx, tripId, userId, model.STARTED) {
 		go s.sendStartedTripMessage(context.Background(), NewTripMessagePayload(s.genMsgId(), s.source, tripId))
 		return Ok
 	}
@@ -148,7 +148,7 @@ func (s DriverServiceImpl) StartTrip(ctx context.Context, userId string, tripId 
 func (s DriverServiceImpl) EndTrip(ctx context.Context, userId string, tripId string) ChangeTripStatusStatus {
 	ctx, span := Tracer.Start(ctx, "/end-trip-svc-method")
 	defer span.End()
-	trip := s.driverRepo.GetTrip(ctx, userId, tripId)
+	trip := s.driverRepo.GetTrip(ctx, tripId, userId)
 	if trip == nil {
 		return TripNotFound
 	}
@@ -156,7 +156,7 @@ func (s DriverServiceImpl) EndTrip(ctx context.Context, userId string, tripId st
 		logger.Main.Warn(fmt.Sprintf("Invalid attempt to change trip status from %s to %s", trip.Status, model.ENDED))
 		return InvalidNewStatus
 	}
-	if s.driverRepo.PutTripStatus(ctx, userId, tripId, model.ENDED) {
+	if s.driverRepo.PutTripStatus(ctx, tripId, userId, model.ENDED) {
 		go s.sendEndedTripMessage(context.Background(), NewTripMessagePayload(s.genMsgId(), s.source, tripId))
 		return Ok
 	}
