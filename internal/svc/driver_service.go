@@ -186,7 +186,8 @@ func (s DriverServiceImpl) CreateTrip(ctx context.Context, trip model.Trip) {
 		Radius:        s.radius,
 	})
 	for i := 0; i < len(drivers); i++ {
-		s.notificationer.SendNotificationToDriver(drivers[i])
+		//s.notificationer.SendNotificationToDriver(drivers[i])
+		fmt.Println(drivers[i])
 	}
 }
 

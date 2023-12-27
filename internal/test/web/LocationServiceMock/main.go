@@ -40,6 +40,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	reqBodyData, err := io.ReadAll(r.Body)
+	fmt.Println("AXAXAXA")
+	fmt.Println(len(reqBodyData))
 	r.Body.Close()
 	if err != nil {
 		Main.Error(err.Error())
@@ -48,6 +50,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 	var reqData QueryBody
 	err = json.Unmarshal(reqBodyData, &reqData)
+	fmt.Println(string(reqBodyData))
 	if err != nil {
 		Main.Error(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)

@@ -41,6 +41,7 @@ func (c LocationClientHttp) GetDrivers(baseCtx context.Context, payload *svc.Get
 	response, err := c.client.Do(request)
 	if err != nil {
 		logger.Main.Error(fmt.Sprintf("Failed http request %s %s", request.Method, request.URL.Path))
+		logger.Main.Error(err.Error())
 		return nil
 	}
 	if response.Status == "404 Not found" {
