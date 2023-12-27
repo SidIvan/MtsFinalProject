@@ -159,27 +159,27 @@ func TestGetTrip(t *testing.T) {
 		{TEST_NON_EXISTING_TRIP_ID, nil},
 	}
 	for _, testCase := range cases {
-		driverRepo.EXPECT().GetTrip(gomock.Any(), TEST_DRIVER_ID, testCase.input).Return(testCase.expected)
+		driverRepo.EXPECT().GetTrip(gomock.Any(), testCase.input, TEST_DRIVER_ID).Return(testCase.expected)
 		assert.Equal(t, testCase.expected, driverService.GetTrip(context.Background(), TEST_DRIVER_ID, testCase.input))
 	}
 }
 
 func TestCancelTripNotFound(t *testing.T) {
 	driverService, driverRepo, _, _ := initMocksAndDriverService(t)
-	driverRepo.EXPECT().GetTrip(gomock.Any(), TEST_DRIVER_ID, TEST_NON_EXISTING_TRIP_ID).Return(nil)
+	driverRepo.EXPECT().GetTrip(gomock.Any(), TEST_NON_EXISTING_TRIP_ID, TEST_DRIVER_ID).Return(nil)
 	assert.Equal(t, svc.TripNotFound, driverService.CancelTrip(context.Background(), TEST_DRIVER_ID, TEST_NON_EXISTING_TRIP_ID, TEST_CANCEL_REASON))
 }
 
 func TestCancelTripInvalidChangeStatus(t *testing.T) {
 	driverService, driverRepo, _, _ := initMocksAndDriverService(t)
-	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[4].DriverId, testTrips[4].Id).Return(&testTrips[4])
+	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[4].Id, testTrips[4].DriverId).Return(&testTrips[4])
 	assert.Equal(t, svc.InvalidNewStatus, driverService.CancelTrip(context.Background(), testTrips[4].DriverId, testTrips[4].Id, TEST_CANCEL_REASON))
 }
 
 func TestCancelTripRepoPutStatusEx(t *testing.T) {
 	driverService, driverRepo, _, _ := initMocksAndDriverService(t)
-	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[0].DriverId, testTrips[0].Id).Return(&testTrips[0])
-	driverRepo.EXPECT().PutTripStatus(gomock.Any(), testTrips[0].DriverId, testTrips[0].Id, model.CANCELED).Return(false)
+	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[0].Id, testTrips[0].DriverId).Return(&testTrips[0])
+	driverRepo.EXPECT().PutTripStatus(gomock.Any(), testTrips[0].Id, testTrips[0].DriverId, model.CANCELED).Return(false)
 	assert.Equal(t, svc.InternalError, driverService.CancelTrip(context.Background(), testTrips[0].DriverId, testTrips[0].Id, TEST_CANCEL_REASON))
 }
 
@@ -187,8 +187,8 @@ func TestCancelTripSuccess(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	driverService, driverRepo, _, _ := initMocksAndDriverService(t)
-	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[0].DriverId, testTrips[0].Id).Return(&testTrips[0])
-	driverRepo.EXPECT().PutTripStatus(gomock.Any(), testTrips[0].DriverId, testTrips[0].Id, model.CANCELED).Return(true)
+	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[0].Id, testTrips[0].DriverId).Return(&testTrips[0])
+	driverRepo.EXPECT().PutTripStatus(gomock.Any(), testTrips[0].Id, testTrips[0].DriverId, model.CANCELED).Return(true)
 	driverRepo.EXPECT().SaveCancelReason(gomock.Any(), testTrips[0].Id, testTrips[0].DriverId, TEST_CANCEL_REASON).Do(func(_ context.Context, _ string, _ string, _ string) { wg.Done() })
 	assert.Equal(t, svc.Ok, driverService.CancelTrip(context.Background(), testTrips[0].DriverId, testTrips[0].Id, TEST_CANCEL_REASON))
 	go func() {
@@ -201,20 +201,20 @@ func TestCancelTripSuccess(t *testing.T) {
 
 func TestAcceptTripNotFound(t *testing.T) {
 	driverService, driverRepo, _, _ := initMocksAndDriverService(t)
-	driverRepo.EXPECT().GetTrip(gomock.Any(), TEST_DRIVER_ID, TEST_NON_EXISTING_TRIP_ID).Return(nil)
+	driverRepo.EXPECT().GetTrip(gomock.Any(), TEST_NON_EXISTING_TRIP_ID, TEST_DRIVER_ID).Return(nil)
 	assert.Equal(t, svc.TripNotFound, driverService.AcceptTrip(context.Background(), TEST_DRIVER_ID, TEST_NON_EXISTING_TRIP_ID))
 }
 
 func TestAcceptTripInvalidChangeStatus(t *testing.T) {
 	driverService, driverRepo, _, _ := initMocksAndDriverService(t)
-	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[4].DriverId, testTrips[4].Id).Return(&testTrips[4])
+	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[4].Id, testTrips[4].DriverId).Return(&testTrips[4])
 	assert.Equal(t, svc.InvalidNewStatus, driverService.AcceptTrip(context.Background(), testTrips[4].DriverId, testTrips[4].Id))
 }
 
 func TestAcceptTripRepoPutStatusEx(t *testing.T) {
 	driverService, driverRepo, _, _ := initMocksAndDriverService(t)
-	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[0].DriverId, testTrips[0].Id).Return(&testTrips[0])
-	driverRepo.EXPECT().PutTripStatus(gomock.Any(), testTrips[0].DriverId, testTrips[0].Id, model.DRIVER_FOUND).Return(false)
+	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[0].Id, testTrips[0].DriverId).Return(&testTrips[0])
+	driverRepo.EXPECT().PutTripStatus(gomock.Any(), testTrips[0].Id, testTrips[0].DriverId, model.DRIVER_FOUND).Return(false)
 	assert.Equal(t, svc.InternalError, driverService.AcceptTrip(context.Background(), testTrips[0].DriverId, testTrips[0].Id))
 }
 
@@ -222,8 +222,8 @@ func TestAcceptTripSuccess(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	driverService, driverRepo, _, eventProducer := initMocksAndDriverService(t)
-	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[0].DriverId, testTrips[0].Id).Return(&testTrips[0])
-	driverRepo.EXPECT().PutTripStatus(gomock.Any(), testTrips[0].DriverId, testTrips[0].Id, model.DRIVER_FOUND).Return(true)
+	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[0].Id, testTrips[0].DriverId).Return(&testTrips[0])
+	driverRepo.EXPECT().PutTripStatus(gomock.Any(), testTrips[0].Id, testTrips[0].DriverId, model.DRIVER_FOUND).Return(true)
 	eventProducer.EXPECT().SendTripEvent(gomock.Any(), gomock.Any()).Do(func(_ context.Context, _ *svc.TripMessagePayload) { wg.Done() })
 	assert.Equal(t, svc.Ok, driverService.AcceptTrip(context.Background(), testTrips[0].DriverId, testTrips[0].Id))
 	go func() {
@@ -236,20 +236,20 @@ func TestAcceptTripSuccess(t *testing.T) {
 
 func TestStartTripNotFound(t *testing.T) {
 	driverService, driverRepo, _, _ := initMocksAndDriverService(t)
-	driverRepo.EXPECT().GetTrip(gomock.Any(), TEST_DRIVER_ID, TEST_NON_EXISTING_TRIP_ID).Return(nil)
+	driverRepo.EXPECT().GetTrip(gomock.Any(), TEST_NON_EXISTING_TRIP_ID, TEST_DRIVER_ID).Return(nil)
 	assert.Equal(t, svc.TripNotFound, driverService.StartTrip(context.Background(), TEST_DRIVER_ID, TEST_NON_EXISTING_TRIP_ID))
 }
 
 func TestStartTripInvalidChangeStatus(t *testing.T) {
 	driverService, driverRepo, _, _ := initMocksAndDriverService(t)
-	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[4].DriverId, testTrips[4].Id).Return(&testTrips[4])
+	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[4].Id, testTrips[4].DriverId).Return(&testTrips[4])
 	assert.Equal(t, svc.InvalidNewStatus, driverService.StartTrip(context.Background(), testTrips[4].DriverId, testTrips[4].Id))
 }
 
 func TestStartTripRepoPutStatusEx(t *testing.T) {
 	driverService, driverRepo, _, _ := initMocksAndDriverService(t)
-	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[2].DriverId, testTrips[2].Id).Return(&testTrips[2])
-	driverRepo.EXPECT().PutTripStatus(gomock.Any(), testTrips[2].DriverId, testTrips[2].Id, model.STARTED).Return(false)
+	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[2].Id, testTrips[2].DriverId).Return(&testTrips[2])
+	driverRepo.EXPECT().PutTripStatus(gomock.Any(), testTrips[2].Id, testTrips[2].DriverId, model.STARTED).Return(false)
 	assert.Equal(t, svc.InternalError, driverService.StartTrip(context.Background(), testTrips[2].DriverId, testTrips[2].Id))
 }
 
@@ -257,8 +257,8 @@ func TestStartTripSuccess(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	driverService, driverRepo, _, eventProducer := initMocksAndDriverService(t)
-	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[2].DriverId, testTrips[2].Id).Return(&testTrips[2])
-	driverRepo.EXPECT().PutTripStatus(gomock.Any(), testTrips[2].DriverId, testTrips[2].Id, model.STARTED).Return(true)
+	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[2].Id, testTrips[2].DriverId).Return(&testTrips[2])
+	driverRepo.EXPECT().PutTripStatus(gomock.Any(), testTrips[2].Id, testTrips[2].DriverId, model.STARTED).Return(true)
 	eventProducer.EXPECT().SendTripEvent(gomock.Any(), gomock.Any()).Do(func(_ context.Context, _ *svc.TripMessagePayload) { wg.Done() })
 	assert.Equal(t, svc.Ok, driverService.StartTrip(context.Background(), testTrips[2].DriverId, testTrips[2].Id))
 	go func() {
@@ -271,20 +271,20 @@ func TestStartTripSuccess(t *testing.T) {
 
 func TestEndTripNotFound(t *testing.T) {
 	driverService, driverRepo, _, _ := initMocksAndDriverService(t)
-	driverRepo.EXPECT().GetTrip(gomock.Any(), TEST_DRIVER_ID, TEST_NON_EXISTING_TRIP_ID).Return(nil)
+	driverRepo.EXPECT().GetTrip(gomock.Any(), TEST_NON_EXISTING_TRIP_ID, TEST_DRIVER_ID).Return(nil)
 	assert.Equal(t, svc.TripNotFound, driverService.EndTrip(context.Background(), TEST_DRIVER_ID, TEST_NON_EXISTING_TRIP_ID))
 }
 
 func TestEndTripInvalidChangeStatus(t *testing.T) {
 	driverService, driverRepo, _, _ := initMocksAndDriverService(t)
-	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[4].DriverId, testTrips[4].Id).Return(&testTrips[4])
+	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[4].Id, testTrips[4].DriverId).Return(&testTrips[4])
 	assert.Equal(t, svc.InvalidNewStatus, driverService.EndTrip(context.Background(), testTrips[4].DriverId, testTrips[4].Id))
 }
 
 func TestEndTripRepoPutStatusEx(t *testing.T) {
 	driverService, driverRepo, _, _ := initMocksAndDriverService(t)
-	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[3].DriverId, testTrips[3].Id).Return(&testTrips[3])
-	driverRepo.EXPECT().PutTripStatus(gomock.Any(), testTrips[3].DriverId, testTrips[3].Id, model.ENDED).Return(false)
+	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[3].Id, testTrips[3].DriverId).Return(&testTrips[3])
+	driverRepo.EXPECT().PutTripStatus(gomock.Any(), testTrips[3].Id, testTrips[3].DriverId, model.ENDED).Return(false)
 	assert.Equal(t, svc.InternalError, driverService.EndTrip(context.Background(), testTrips[3].DriverId, testTrips[3].Id))
 }
 
@@ -292,8 +292,8 @@ func TestEndTripSuccess(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	driverService, driverRepo, _, eventProducer := initMocksAndDriverService(t)
-	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[3].DriverId, testTrips[3].Id).Return(&testTrips[3])
-	driverRepo.EXPECT().PutTripStatus(gomock.Any(), testTrips[3].DriverId, testTrips[3].Id, model.ENDED).Return(true)
+	driverRepo.EXPECT().GetTrip(gomock.Any(), testTrips[3].Id, testTrips[3].DriverId).Return(&testTrips[3])
+	driverRepo.EXPECT().PutTripStatus(gomock.Any(), testTrips[3].Id, testTrips[3].DriverId, model.ENDED).Return(true)
 	eventProducer.EXPECT().SendTripEvent(gomock.Any(), gomock.Any()).Do(func(_ context.Context, _ *svc.TripMessagePayload) { wg.Done() })
 	assert.Equal(t, svc.Ok, driverService.EndTrip(context.Background(), testTrips[3].DriverId, testTrips[3].Id))
 	go func() {
